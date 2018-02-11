@@ -6,6 +6,7 @@ import numpy as np
 import scipy.misc
 import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.use('Agg')
 
 import coco
 import utils
