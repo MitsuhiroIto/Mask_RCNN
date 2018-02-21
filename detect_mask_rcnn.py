@@ -7,8 +7,6 @@ import scipy.misc
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
-
 import coco
 import utils
 import model as modellib

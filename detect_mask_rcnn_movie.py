@@ -5,14 +5,8 @@ import math
 import numpy as np
 import scipy.misc
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw, ImageFont
-import matplotlib.patches as patches
-from matplotlib.patches import Polygon
-import matplotlib.lines as lines
-import colorsys
-from skimage.measure import find_contours
-
 import coco
 import utils
 import model as modellib
