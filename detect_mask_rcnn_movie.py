@@ -52,16 +52,15 @@ def display_instances(image, boxes, masks, class_ids, class_names,
         class_id = class_ids[i]
         score = scores[i] if scores is not None else None
         label = class_names[class_id]
-        if label == "car" or label == "bus" or label == "truck":
-            image = cv2.rectangle(masked_image, (int(x1), int(y1)), (int(x2), int(y2)), (255, 0, 0), 2)
-            print("flame_number:{}, label:{}, center:({},{}), width:{}, height:{}, score:{:.3f}".format(nowFlame, label, (x1 + x2)/2, (y1 + y2)/2, x2 - x1, y2 - y1,score))
-            caption = label + "{:.3f}".format(score)
-            cv2.putText(masked_image, caption, ((x1 + x2) // 2, y1 + 8), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
-            # Mask
-            mask = masks[:, :, i]
-            masked_image = apply_mask(masked_image, mask, color)
 
-    #cv2.imwrite("test_mask.png", image)
+        image = cv2.rectangle(masked_image, (int(x1), int(y1)), (int(x2), int(y2)), (255, 0, 0), 2)
+        print("flame_number:{}, label:{}, center:({},{}), width:{}, height:{}, score:{:.3f}".format(nowFlame, label, (x1 + x2)/2, (y1 + y2)/2, x2 - x1, y2 - y1,score))
+        caption = label + "{:.3f}".format(score)
+        cv2.putText(masked_image, caption, ((x1 + x2) // 2, y1 + 8), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+        # Mask
+        mask = masks[:, :, i]
+        masked_image = apply_mask(masked_image, mask, color)
+
     return masked_image
 
 
@@ -145,9 +144,7 @@ while(capture.isOpened()):
     r = results[0]
     masked_image =display_instances(image, r['rois'], r['masks'], r['class_ids'],
                                 class_names, r['scores'], i = nowFlame)
-    #image = cv2.imread("test_mask.png")
     VWriter.write(masked_image)
-    nowFlame += 1
     nowFlame += 1
     if nowFlame == flameNum :
         break
