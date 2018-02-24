@@ -10,16 +10,75 @@ import matplotlib.pyplot as plt
 import coco
 import utils
 import model as modellib
-import visualize
+import colorsys
+
+import cv2
 
 ROOT_DIR = os.getcwd()
 MODEL_DIR = os.path.join(ROOT_DIR, "logs")
 COCO_MODEL_PATH = os.path.join(ROOT_DIR, "Mask_RCNN/", "mask_rcnn_coco.h5")
 file_name = sys.argv[1]
+output_path = file_name.rsplit('.', 1)[0]  + "_mask." +  file_name.rsplit('.', 1)[1]
+
+"""
+Mask_RCNNの設定
+"""
 
 class InferenceConfig(coco.CocoConfig):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
+
+def display_instances(image, boxes, masks, class_ids, class_names,
+                      scores=None):
+    """
+    boxes: [num_instance, (y1, x1, y2, x2, class_id)] in image coordinates.
+    masks: [num_instances, height, width]
+    class_ids: [num_instances]
+    class_names: list of class names of the dataset
+    scores: (optional) confidence scores for each box
+    """
+    # Number of instances
+    N = boxes.shape[0]
+    print(N)
+    colors = random_colors(N)
+    masked_image = image
+    for i in range(N):
+        # Label and box
+        color = colors[i]
+        y1, x1, y2, x2 = boxes[i]
+        class_id = class_ids[i]
+        score = scores[i] if scores is not None else None
+        label = class_names[class_id]
+        masked_image = cv2.rectangle(masked_image, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+        print("label:{}, center:({},{}), width:{}, height:{}, score:{:.3f}".format(label, (x1 + x2)/2, (y1 + y2)/2, x2 - x1, y2 - y1,score))
+        caption = label + "{:.3f}".format(score)
+        cv2.putText(masked_image, caption, (x1 , y1 - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+        # Mask
+        mask = masks[:, :, i]
+        masked_image = apply_mask(masked_image, mask, color)
+
+    return masked_image
+
+def random_colors(N, bright=True):
+    """
+    Generate random colors.
+    To get visually distinct colors, generate them in HSV space then
+    convert to RGB.
+    """
+    brightness = 1.0 if bright else 0.7
+    hsv = [(i / N, 1, brightness) for i in range(N)]
+    colors = list(map(lambda c: colorsys.hsv_to_rgb(*c), hsv))
+    return colors
+
+def apply_mask(image, mask, color, alpha=0.5):
+    """Apply the given mask to the image.
+    """
+    for c in range(3):
+        image[:, :, c] = np.where(mask == 1,
+                                  image[:, :, c] *
+                                  (1 - alpha) + alpha * color[c] * 255,
+                                  image[:, :, c])
+    return image
 
 class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
                'bus', 'train', 'truck', 'boat', 'traffic light',
@@ -38,14 +97,13 @@ class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
                'teddy bear', 'hair drier', 'toothbrush']
 
 config = InferenceConfig()
-#config.print()
 
 model = modellib.MaskRCNN(mode="inference", model_dir=MODEL_DIR, config=config)
 model.load_weights(COCO_MODEL_PATH, by_name=True)
 
-image = scipy.misc.imread(file_name)
+image = cv2.imread(file_name)
 results = model.detect([image], verbose=1)
 r = results[0]
-
-visualize.display_instances(image, r['rois'], r['masks'], r['class_ids'],
-                            class_names, r['scores'], title="", figsize=(16, 16), filename = file_name )
+masked_image =display_instances(image, r['rois'], r['masks'], r['class_ids'],
+                            class_names, r['scores'])
+cv2.imwrite(output_path, masked_image)
